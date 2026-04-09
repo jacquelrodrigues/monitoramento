@@ -1,40 +1,57 @@
 import time
+from datetime import datetime
 from coleta_api import autenticar, listar_hosts, buscar_metricas
+from banco import conectar
+from bot_alertas import verificar_alertas
 
 # ──────────────────────────────────────────
-# CONFIGURAÇÕES GERAIS
+# CONFIGURAÇÕES
 # ──────────────────────────────────────────
-INTERVALO_SEGUNDOS = 60   # coleta métricas a cada 60 segundos
+INTERVALO_SEGUNDOS = 300   # 5 minutos
 
 
 # ──────────────────────────────────────────
 # LOOP PRINCIPAL
 # ──────────────────────────────────────────
 def main():
-    print("🚀 Sistema de monitoramento iniciado!\n")
+    print("🚀 Sistema de monitoramento iniciado!")
+    print(f"🔄 Ciclo a cada {INTERVALO_SEGUNDOS // 60} minutos\n")
 
-    # 1. Autenticar no Zabbix
-    token = autenticar()
-
-    # 2. Listar hosts disponíveis
-    hosts = listar_hosts(token)
-
-    if not hosts:
-        print("❌ Nenhum host encontrado. Verifique o Zabbix.")
-        return
-
-    # 3. Loop de coleta contínua
-    print(f"\n🔄 Coletando métricas a cada {INTERVALO_SEGUNDOS}s... (Ctrl+C para parar)\n")
     while True:
-        for host in hosts:
-            buscar_metricas(token, host["hostid"], host["name"])
+        agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        print(f"\n{'=' * 50}")
+        print(f"  🕐 Ciclo iniciado em {agora}")
+        print(f"{'=' * 50}")
 
-            # 🔜 Em breve: salvar no banco SQL
-            # salvar_banco(metricas)
+        try:
+            # 1. Autenticar no Zabbix
+            token = autenticar()
 
-            # 🔜 Em breve: verificar alertas
-            # verificar_alertas(metricas)
+            # 2. Listar hosts
+            hosts = listar_hosts(token)
 
+            if hosts:
+                # 3. Conectar ao banco
+                conn = conectar()
+
+                # 4. Coletar e salvar métricas de cada host
+                for host in hosts:
+                    buscar_metricas(token, host["hostid"], host["name"], conn)
+
+                conn.close()
+
+                # 5. Verificar alertas e notificar no Telegram
+                print("\n")
+                verificar_alertas()
+
+            else:
+                print("❌ Nenhum host encontrado.")
+
+        except Exception as e:
+            print(f"\n❌ Erro no ciclo: {e}")
+
+        # 6. Aguardar próximo ciclo
+        print(f"\n⏳ Próximo ciclo em {INTERVALO_SEGUNDOS // 60} minutos...")
         time.sleep(INTERVALO_SEGUNDOS)
 
 

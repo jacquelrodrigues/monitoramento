@@ -1,10 +1,11 @@
 import requests
 import json
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from banco import conectar, salvar_metrica, listar_metricas
 
 # ──────────────────────────────────────────
-# CONFIGURAÇÕES — ajuste para o seu ambiente
+# CONFIGURAÇÕES — carregadas do arquivo .env
 # ──────────────────────────────────────────
 load_dotenv()
 
@@ -68,9 +69,9 @@ def listar_hosts(token):
 
 
 # ──────────────────────────────────────────
-# PASSO 3 — Buscar métricas recentes de um host
+# PASSO 3 — Buscar e salvar métricas de um host
 # ──────────────────────────────────────────
-def buscar_metricas(token, host_id, host_nome):
+def buscar_metricas(token, host_id, host_nome, conn=None):
 
     print(f"\n{'=' * 50}")
     print(f"  📊 {host_nome}")
@@ -108,6 +109,18 @@ def buscar_metricas(token, host_id, host_nome):
         print(f"    Chave: {item['key_']}")
         print()
 
+        # Salva no banco se a conexão foi passada
+        if conn and valor != "sem dado":
+            salvar_metrica(
+                conn,
+                host_id   = host_id,
+                host_nome = host_nome,
+                metrica   = item["name"],
+                chave     = item["key_"],
+                valor     = valor,
+                unidade   = unidade
+            )
+
     print("=" * 50)
 
 
@@ -121,7 +134,15 @@ if __name__ == "__main__":
     hosts = listar_hosts(token)
 
     if hosts:
+        # Conecta ao banco
+        conn = conectar()
+
         for host in hosts:
-            buscar_metricas(token, host["hostid"], host["name"])
+            buscar_metricas(token, host["hostid"], host["name"], conn)
+
+        # Mostra as últimas métricas salvas
+        listar_metricas(conn)
+
+        conn.close()
     else:
         print("Nenhum host encontrado.")
