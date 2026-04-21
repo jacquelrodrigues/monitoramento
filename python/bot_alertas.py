@@ -20,10 +20,10 @@ MYSQL_BANCO   = os.getenv("MYSQL_BANCO")
 # LIMITES DE ALERTA
 # ──────────────────────────────────────────
 LIMITES = {
-    "CPU utilization":    80.0,   # alerta se CPU > 80%
-    "Memory utilization": 85.0,   # alerta se memória > 85%
-    "vm.memory.util":     85.0,   # chave alternativa do Windows
-    "Used disk space":    90.0,   # alerta se disco > 90%
+    "CPU utilization":    25.0,   # alerta se CPU > 10%
+    "Memory utilization": 50.0,   # alerta se memória > %
+    "vm.memory.util":     50.0,   # chave alternativa do Windows
+    "Used disk space":    85.0,   # alerta se disco > 85%
 }
 
 
